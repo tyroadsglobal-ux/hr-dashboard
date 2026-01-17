@@ -94,8 +94,8 @@ import os
 
 def load_from_supabase():
     supabase = create_client(
-        os.getenv("SUPABASE_URL"),
-        os.getenv("SUPABASE_KEY")
+        os.getenv("https://bkydubrgdhisqdyzkozz.supabase.co"),
+        os.getenv("sb_publishable_Y3fc0Hx5v6_7p5ZD6pcfWg_QC67OrEq")
     )
     data = supabase.table("hr_candidates").select("*").execute()
     return pd.DataFrame(data.data)
@@ -194,5 +194,6 @@ st.markdown("<div class='table-container'>", unsafe_allow_html=True)
 st.dataframe(filtered_df, width="stretch"
 , hide_index=True)
 st.markdown("</div>", unsafe_allow_html=True)
+
 
 
