@@ -89,20 +89,23 @@ if AUTO_REFRESH:
     st.rerun()
 
 # ================= DATA LOAD =================
-def load_from_csv():
-    df = pd.read_csv("hr_Report.csv", skiprows=1, encoding="utf-8-sig", on_bad_lines="skip")
-    df.columns = df.columns.str.strip()
-    return df
+from supabase import create_client
+import os
 
-@st.cache_data
+def load_from_supabase():
+    supabase = create_client(
+        os.getenv("SUPABASE_URL"),
+        os.getenv("SUPABASE_KEY")
+    )
+    data = supabase.table("hr_candidates").select("*").execute()
+    return pd.DataFrame(data.data)
+
+@st.cache_data(ttl=30)
 def load_data():
-    return load_from_csv()
+    return load_from_supabase()
 
 df = load_data()
 
-for col in ["Age", "Expected Salary"]:
-    if col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
 
 # ================= FILTERS =================
 st.markdown("### 🔍 Filters")
@@ -191,4 +194,5 @@ st.markdown("<div class='table-container'>", unsafe_allow_html=True)
 st.dataframe(filtered_df, width="stretch"
 , hide_index=True)
 st.markdown("</div>", unsafe_allow_html=True)
+
 
