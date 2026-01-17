@@ -6,8 +6,8 @@ import os
 # ================= CONFIG =================
 st.set_page_config(page_title="Job Application", layout="centered")
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_URL = os.getenv("https://bkydubrgdhisqdyzkozz.supabase.co")
+SUPABASE_KEY = os.getenv("sb_publishable_Y3fc0Hx5v6_7p5ZD6pcfWg_QC67OrEq")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -61,3 +61,4 @@ if submit:
         }).execute()
 
         st.success("✅ Application submitted successfully!")
+
