@@ -1,15 +1,15 @@
 import streamlit as st
 import pandas as pd
 import os
-from dotenv import load_dotenv
 from supabase import create_client
 
 # ================= ENV =================
-load_dotenv()
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 
 # ================= PAGE CONFIG =================
 st.set_page_config(
@@ -147,3 +147,4 @@ st.dataframe(
         "Resume": st.column_config.LinkColumn("Resume", display_text="View")
     }
 )
+
