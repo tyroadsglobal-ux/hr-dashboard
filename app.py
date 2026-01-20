@@ -1,200 +1,149 @@
 import streamlit as st
 import pandas as pd
-import time
 import os
+from dotenv import load_dotenv
+from supabase import create_client
+
+# ================= ENV =================
+load_dotenv()
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ================= PAGE CONFIG =================
-st.set_page_config(page_title="HR Dashboard", layout="wide")
+st.set_page_config(
+    page_title="Recruitment Dashboard",
+    layout="wide"
+)
 
-# ================= GLOBAL STYLES =================
+# ================= GLOBAL UI =================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+#MainMenu, footer {visibility:hidden;}
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
+html, body, [data-testid="stAppViewContainer"] {
+    background: radial-gradient(circle at top, #11162b, #0b0f1e);
 }
 
-body {
-    background-color: #0e1325;
+/* REMOVE STREAMLIT TOP GAP */
+.block-container {
+    padding-top: 1.5rem !important;
 }
 
-/* SECTION TITLES */
-.section-title {
-    font-size: 24px;
-    font-weight: 700;
-    margin: 25px 0 18px 0;
+/* ================= CARDS ================= */
+.section-card {
+    background:#131a36;
+    padding:28px;
+    border-radius:22px;
+    box-shadow:0 20px 40px rgba(0,0,0,.45);
+    margin-bottom:30px;
 }
 
-/* FILTER CONTAINER */
-.filter-box {
-    background: #131a36;
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 20px;
+/* ================= KPI ================= */
+.kpi-card {
+    background:linear-gradient(135deg,#1f2b45,#243b5e);
+    padding:24px;
+    border-radius:20px;
+    color:white;
+    box-shadow:0 18px 35px rgba(0,0,0,.45);
+    transition:.25s ease;
 }
-
-/* KPI CARDS */
-.card {
-    padding: 18px;
-    border-radius: 16px;
-    color: white;
-    height: 115px;
-    margin-bottom: 22px;
-    box-shadow: 0 10px 26px rgba(0,0,0,0.45);
-    transition: transform 0.25s ease;
-}
-
-.card:hover {
+.kpi-card:hover {
     transform: translateY(-4px);
 }
+.kpi-title {font-size:13px; opacity:.8;}
+.kpi-value {font-size:30px; font-weight:700;}
 
-.card-title {
-    font-size: 13px;
-    opacity: 0.85;
-}
-
-.card-value {
-    font-size: 28px;
-    font-weight: 700;
-    margin-top: 10px;
-}
-
-/* SOFT COLOR FAMILY */
-.blue   { background: linear-gradient(135deg, #1f2b45, #243b5e); }
-.green  { background: linear-gradient(135deg, #1f4d4a, #256d68); }
-.purple { background: linear-gradient(135deg, #3a245d, #4b2e7a); }
-.gray   { background: linear-gradient(135deg, #2a2f36, #3a3f46); }
-.red    { background: linear-gradient(135deg, #4a1f25, #6a2a33); }
-
-/* TABLE */
-.table-container {
-    background: #131a36;
-    border-radius: 16px;
-    padding: 14px;
+/* ================= INPUTS ================= */
+input, textarea, button {
+    border-radius:14px !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ================= TITLE =================
-st.markdown("""
-<h1 style='text-align:center;'>📊 HR Recruitment Dashboard</h1>
-<p style='text-align:center;color:#9aa4bf;'>Real-time recruitment intelligence</p>
-""", unsafe_allow_html=True)
-
-# ================= LIVE REFRESH =================
-AUTO_REFRESH = st.toggle("🔄 Live Refresh (every 30 sec)", value=False)
-if AUTO_REFRESH:
-    time.sleep(30)
-    st.rerun()
-
-# ================= DATA LOAD =================
-from supabase import create_client
-import os
-
-def load_from_supabase():
-    supabase = create_client(
-        os.getenv("https://bkydubrgdhisqdyzkozz.supabase.co"),
-        os.getenv("sb_publishable_Y3fc0Hx5v6_7p5ZD6pcfWg_QC67OrEq")
-    )
-    data = supabase.table("hr_candidates").select("*").execute()
-    return pd.DataFrame(data.data)
+# ================= DASHBOARD =================
+st.title("📊 Recruitment Dashboard")
+st.caption("Clean, real-time hiring insights")
 
 @st.cache_data(ttl=30)
 def load_data():
-    return load_from_supabase()
+    res = supabase.table("hr_candidates").select("*").execute()
+    return pd.DataFrame(res.data or [])
 
 df = load_data()
 
+if df.empty:
+    st.warning("No data found")
+    st.stop()
 
 # ================= FILTERS =================
-st.markdown("### 🔍 Filters")
+st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+st.markdown("### 🔎 Filter Candidates")
 
-with st.container():
-    st.markdown("<div class='filter-box'>", unsafe_allow_html=True)
+with st.form("filters"):
+    c1, c2, c3 = st.columns(3)
 
-    f1, f2, f3, f4, f5 = st.columns([1,1,1,1,1.2])
-
-    with f1:
-        gender = st.multiselect("Gender", sorted(df["Gender"].dropna().unique()))
-
-    with f2:
-        industry = st.multiselect("Industry", sorted(df["Industry"].dropna().unique()))
-
-    with f3:
-        location = st.multiselect("Location", sorted(df["Location"].dropna().unique()))
-
-    with f4:
-        experience = st.multiselect(
-            "Experience",
-            sorted(df["Experience"].dropna().astype(str).unique())
+    with c1:
+        f_location = st.multiselect(
+            "Location",
+            ["Bada Kampoo","Thatipur","Morar","DD Nagar","Lashkar","Hazira","Other"]
         )
+    with c2:
+        f_experience = st.multiselect(
+            "Experience",
+            ["Fresher","0–1 Years","1–2 Years","2–3 Years","3–5 Years","5+ Years"]
+        )
+    with c3:
+        f_gender = st.multiselect("Gender", ["Male","Female","Other"])
 
-    with f5:
-        st.markdown("**Age Range**")
-        age_range = st.slider(
-    "Age Range",
-    int(df["Age"].min()),
-    int(df["Age"].max()),
-    (int(df["Age"].min()), int(df["Age"].max())),
-    label_visibility="collapsed"
-)
+    age_min, age_max = int(df.age.min()), int(df.age.max())
+    f_age = st.slider("Age Range", age_min, age_max, (age_min, age_max))
 
-    apply = st.button("✅ Apply Filters", width="stretch")
+    apply = st.form_submit_button("Apply Filters")
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ================= APPLY FILTERS =================
-filtered_df = df.copy()
-
-if apply:
-    if gender:
-        filtered_df = filtered_df[filtered_df["Gender"].isin(gender)]
-    if industry:
-        filtered_df = filtered_df[filtered_df["Industry"].isin(industry)]
-    if location:
-        filtered_df = filtered_df[filtered_df["Location"].isin(location)]
-    if experience:
-        filtered_df["Experience"] = filtered_df["Experience"].astype(str)
-        filtered_df = filtered_df[filtered_df["Experience"].isin(experience)]
-    filtered_df = filtered_df[
-        (filtered_df["Age"] >= age_range[0]) &
-        (filtered_df["Age"] <= age_range[1])
-    ]
-
-# ================= INSIGHTS =================
-freshers = filtered_df[filtered_df["Experience"].astype(str).str.contains("Nil|0", case=False, na=False)]
-experienced = filtered_df.drop(freshers.index)
-
-top_age = pd.cut(
-    filtered_df["Age"],
-    [0,22,27,35,100],
-    labels=["18–22","23–27","28–35","35+"]
-).value_counts().idxmax()
-
-avg_salary = int(filtered_df["Expected Salary"].mean()) if not filtered_df.empty else 0
-high_salary = filtered_df[filtered_df["Expected Salary"] > 15000]
-
-# ================= KPI CARDS =================
-st.markdown("<div class='section-title'>📌 Recruitment Overview</div>", unsafe_allow_html=True)
-
-r1 = st.columns(4)
-r1[0].markdown(f"<div class='card blue'><div class='card-title'>Total Applications</div><div class='card-value'>{len(filtered_df)}</div></div>", unsafe_allow_html=True)
-r1[1].markdown(f"<div class='card green'><div class='card-title'>Freshers Pool</div><div class='card-value'>{len(freshers)}</div></div>", unsafe_allow_html=True)
-r1[2].markdown(f"<div class='card purple'><div class='card-title'>Experienced Talent</div><div class='card-value'>{len(experienced)}</div></div>", unsafe_allow_html=True)
-r1[3].markdown(f"<div class='card gray'><div class='card-title'>Prime Age Group</div><div class='card-value'>{top_age}</div></div>", unsafe_allow_html=True)
-
-r2 = st.columns(2)
-r2[0].markdown(f"<div class='card blue'><div class='card-title'>Avg Expected Salary</div><div class='card-value'>₹{avg_salary:,}</div></div>", unsafe_allow_html=True)
-r2[1].markdown(f"<div class='card red'><div class='card-title'>High Salary Demand</div><div class='card-value'>{len(high_salary)}</div></div>", unsafe_allow_html=True)
-
-# ================= TABLE =================
-st.markdown("<div class='section-title'>📋 Candidate Details</div>", unsafe_allow_html=True)
-st.markdown("<div class='table-container'>", unsafe_allow_html=True)
-st.dataframe(filtered_df, width="stretch"
-, hide_index=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
+# ================= FILTER LOGIC =================
+filtered = df.copy()
 
+if apply:
+    if f_location:
+        filtered = filtered[filtered.location.isin(f_location)]
+    if f_experience:
+        filtered = filtered[filtered.experience.isin(f_experience)]
+    if f_gender:
+        filtered = filtered[filtered.gender.isin(f_gender)]
+    filtered = filtered[
+        (filtered.age >= f_age[0]) &
+        (filtered.age <= f_age[1])
+    ]
 
+# ================= KPI =================
+total = len(filtered)
+freshers = filtered.experience.str.contains("Fresher|0", case=False, na=False).sum()
+experienced = total - freshers
+avg_salary = int(filtered.expected_salary.mean()) if not filtered.empty else 0
 
+st.markdown("### 📌 Recruitment Overview")
+
+k1, k2, k3, k4 = st.columns(4)
+k1.markdown(f"<div class='kpi-card'><div class='kpi-title'>Total Applications</div><div class='kpi-value'>{total}</div></div>", unsafe_allow_html=True)
+k2.markdown(f"<div class='kpi-card'><div class='kpi-title'>Freshers</div><div class='kpi-value'>{freshers}</div></div>", unsafe_allow_html=True)
+k3.markdown(f"<div class='kpi-card'><div class='kpi-title'>Experienced</div><div class='kpi-value'>{experienced}</div></div>", unsafe_allow_html=True)
+k4.markdown(f"<div class='kpi-card'><div class='kpi-title'>Avg Salary</div><div class='kpi-value'>₹{avg_salary:,}</div></div>", unsafe_allow_html=True)
+
+# ================= TABLE =================
+st.markdown("### 📋 Candidate Details")
+
+filtered["Resume"] = filtered.resume_link
+display = filtered.drop(columns=["resume_link"])
+
+st.dataframe(
+    display.sort_values("created_at", ascending=False),
+    hide_index=True,
+    use_container_width=True,
+    column_config={
+        "Resume": st.column_config.LinkColumn("Resume", display_text="View")
+    }
+)
